@@ -1,18 +1,22 @@
 package com.calculonumerico.calculonumerico.service;
 
-import com.calculonumerico.calculonumerico.model.EntradaFuncao;
-import com.calculonumerico.calculonumerico.model.Funcao;
-import com.calculonumerico.calculonumerico.model.Intervalo;
+import com.calculonumerico.calculonumerico.model.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class CalculoService {
 
     private List<Double> raizesDaFuncao = new ArrayList<>();
+    private List<Intervalo> historicoIntervalos = new ArrayList<>();
+    private List<Auditoria> auditoria = new ArrayList<>();
+    private List<Controle> dadosAnalisadosEntrada = new ArrayList<>();
+    private List<Integer> valoresDeRange = new ArrayList<>();
 
     public void calcularMetodoBissecaoNaoLinear(EntradaFuncao entradaFuncao) {
         System.out.println("FUNCIONANDO");
@@ -40,11 +44,17 @@ public class CalculoService {
 
     @Scheduled(fixedDelay = 500000)
     public void testeFuncao() {
-        Intervalo intervalo = new Intervalo(0.5, 1.0);
-        EntradaFuncao entradaFuncao = new EntradaFuncao(5.0,1.0,3.0,null,null,null,0.01);
-        Double mediaDeIntervalo = calcularMediaDeIntervalo(intervalo);
-        refinarIntervalo(entradaFuncao, intervalo, mediaDeIntervalo);
-        System.out.println("TESTE");
+//        Intervalo intervalo = new Intervalo(0.5, 1.0);
+        EntradaFuncao entradaFuncao = new EntradaFuncao(5.0,1.0,3.0,3.0,3.0,3.0,0.01);
+        List<Integer> valores = retornaRange(entradaFuncao);
+        List<Controle> controladores = analisarEntradas(entradaFuncao, valores);
+        List<Intervalo> intervalos = gerarIntervalos(controladores);
+        intervalos.forEach(inter -> {
+            System.out.println("Aplicando todo o calculo no intervalo " + inter.toString());
+            Double mediaDeIntervalo = calcularMediaDeIntervalo(inter);
+            refinarIntervalo(entradaFuncao, inter, mediaDeIntervalo);
+        });
+
     }
 
     /**
@@ -80,7 +90,6 @@ public class CalculoService {
             f = entradaFuncao.getEntradaUm();
         }
         Double resultado = a + b + c + d + e + f;
-        System.out.println("O resultado da funcao é: " + resultado);
         return resultado;
     }
 
@@ -95,22 +104,31 @@ public class CalculoService {
      */
     public void refinarIntervalo(EntradaFuncao entradaFuncao, Intervalo intervalo, Double mediaIntervalo) {
        while (isCriterioDeParada(intervalo, entradaFuncao.getEntradaEpsilon())) {
-           System.out.println("O critério ainda não pe verdadeiro");
+           System.out.println("_________________________________________________________________ \n");
+           System.out.println("O critério ainda não é verdadeiro " + intervalo.toString());
            Double resultadoFuncao = calcularFuncao(entradaFuncao, mediaIntervalo);
            System.out.println("Resultado da raiz da funcao: " + resultadoFuncao);
            if (resultadoFuncao > 0) {
-               System.out.println("É positivo");
+               System.out.println(resultadoFuncao + " É positivo");
                intervalo.setB(mediaIntervalo);
            } else {
-               System.out.println("É negativo");
+               System.out.println(resultadoFuncao + " É negativo");
                intervalo.setA(mediaIntervalo);
            }
            raizesDaFuncao.add(resultadoFuncao);
            mediaIntervalo = calcularMediaDeIntervalo(intervalo);
-
+           auditoria.add(new Auditoria(new Intervalo(intervalo.getA(), intervalo.getB()), resultadoFuncao));
        }
-       System.out.println("Finalização do calculo de raízes reais: " + raizesDaFuncao.get(raizesDaFuncao.size() -1));
-//        return intervalo;
+        Double raizEncontrada = raizesDaFuncao.get(raizesDaFuncao.size() - 1);
+        System.out.println("Finalização do calculo de raízes reais: " + raizEncontrada);
+        auditoria.get(auditoria.size() - 1).setRaizDaFuncaoEncontrada(raizEncontrada);
+        listarAuditoria();
+    }
+
+
+    public void listarAuditoria() {
+        System.out.println("Auditoria");
+        auditoria.forEach(intervalo -> System.out.println(intervalo.toString()));
     }
 
     /**
@@ -137,5 +155,89 @@ public class CalculoService {
      */
     public Double calcularEpsilon(Double epsilon) {
         return Math.pow(10, epsilon);
+    }
+
+    /**
+     * Calcular o array gerado pelo polinomio Ex: [-5,-4,-3,-2,-1,0,1,2,3,4,5]
+     * e aplica esses valores na funcao para gerar o sinal
+     *  @param entradaFuncao
+     * @param valores
+     * @return
+     */
+    public List<Controle> analisarEntradas(EntradaFuncao entradaFuncao, List<Integer> valores) {
+        valores.forEach(valor -> {
+            if(valor != null) {
+                Double resultado = calcularFuncao(entradaFuncao, Double.valueOf(valor));
+                Controle controle = gerarSinal(resultado, Double.valueOf(valor));
+                dadosAnalisadosEntrada.add(controle);
+            }
+        });
+        System.out.println("_________________________________________________");
+        System.out.println("Gerado os valores com os sinais \n");
+        dadosAnalisadosEntrada.forEach(c -> System.out.println(c.toString()));
+        return dadosAnalisadosEntrada;
+    }
+
+    /**
+     * É responsavel por gerar o sinal de acordo com o resultado
+     *
+     * @param resultado
+     * @param elemento
+     * @return
+     */
+    public Controle gerarSinal(Double resultado, Double elemento) {
+        if (resultado > 0) {
+            return new Controle("+", elemento);
+        } else {
+            return new Controle("-", elemento);
+        }
+    }
+
+    /**
+     * É responsavel por gerar o arra de range gerado pelo polinomio Ex: [-5,-4,-3,-2,-1,0,1,2,3,4,5]
+     * @param entradaFuncao
+     * @return
+     */
+    public List<Integer> retornaRange(EntradaFuncao entradaFuncao) {
+        int contador = 0;
+        if(entradaFuncao.getEntradaSeis() != null) {
+            contador++;
+        }
+        if(entradaFuncao.getEntradaCinco() != null) {
+            contador++;
+        }
+        if(entradaFuncao.getEntradaQuatro() != null) {
+            contador++;
+        }
+        if(entradaFuncao.getEntradaTres() != null) {
+            contador++;
+        }
+        if(entradaFuncao.getEntradaDois() != null) {
+            contador++;
+        }
+        if(entradaFuncao.getEntradaUm() != null) {
+            contador++;
+        }
+
+        List<Integer> valores = IntStream.range(-contador, contador).boxed().collect(Collectors.toList());
+        valores.add(valores.get(valores.size() - 1) + 1);
+        return valores;
+    }
+
+
+
+    public List<Intervalo> gerarIntervalos(List<Controle> controles) {
+        List<Intervalo> intervalosNovos = new ArrayList<>();
+        String sinalAtual = controles.get(0).getSinal();
+        for(int i=0; i < controles.size();  i++) {
+            if(!controles.get(i).getSinal().equals(sinalAtual)) {
+                intervalosNovos.add(new Intervalo(controles.get(i-1).getValue(), controles.get(i).getValue()));
+                sinalAtual = controles.get(i).getSinal();
+            }
+        }
+        System.out.println("____________________________________________");
+        System.out.println("Intervalos Gerados \n");
+        intervalosNovos.forEach(i -> System.out.println(i.toString()));
+        return intervalosNovos;
     }
 }

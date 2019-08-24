@@ -28,4 +28,11 @@ public class Intervalo {
     public void setB(Double b) {
         this.b = b;
     }
+
+    @Override
+    public String toString() {
+        return "[a=" + a +
+                ", b=" + b +
+                "]";
+    }
 }
