@@ -1,7 +1,6 @@
 package com.calculonumerico.calculonumerico.service;
 
 import com.calculonumerico.calculonumerico.model.*;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -42,19 +41,20 @@ public class CalculoService {
         return new Intervalo(a, b);
     }
 
-    @Scheduled(fixedDelay = 500000)
-    public void testeFuncao() {
+//    @Scheduled(fixedDelay = 500000)
+    public List<Auditoria> aplicarFuncao(EntradaFuncao entradaFuncao) {
 //        Intervalo intervalo = new Intervalo(0.5, 1.0);
-        EntradaFuncao entradaFuncao = new EntradaFuncao(5.0,1.0,3.0,3.0,3.0,3.0,0.01);
+        List<Auditoria> auditorias = new ArrayList<>();
+//        EntradaFuncao entradaFuncao = new EntradaFuncao(3.0,9.0,null,1.0,null,null,0.01);
         List<Integer> valores = retornaRange(entradaFuncao);
         List<Controle> controladores = analisarEntradas(entradaFuncao, valores);
         List<Intervalo> intervalos = gerarIntervalos(controladores);
-        intervalos.forEach(inter -> {
+        for( Intervalo inter: intervalos) {
             System.out.println("Aplicando todo o calculo no intervalo " + inter.toString());
             Double mediaDeIntervalo = calcularMediaDeIntervalo(inter);
-            refinarIntervalo(entradaFuncao, inter, mediaDeIntervalo);
-        });
-
+            auditorias = refinarIntervalo(entradaFuncao, inter, mediaDeIntervalo);
+        }
+        return auditorias;
     }
 
     /**
@@ -97,12 +97,11 @@ public class CalculoService {
     /**
      * É responsável por refinar os intervalos até encontrar o critério de parada e recuperar
      * as raízes reais.
-     *
-     * @param entradaFuncao
+     *  @param entradaFuncao
      * @param intervalo
      * @param mediaIntervalo
      */
-    public void refinarIntervalo(EntradaFuncao entradaFuncao, Intervalo intervalo, Double mediaIntervalo) {
+    public List<Auditoria> refinarIntervalo(EntradaFuncao entradaFuncao, Intervalo intervalo, Double mediaIntervalo) {
        while (isCriterioDeParada(intervalo, entradaFuncao.getEntradaEpsilon())) {
            System.out.println("_________________________________________________________________ \n");
            System.out.println("O critério ainda não é verdadeiro " + intervalo.toString());
@@ -122,13 +121,14 @@ public class CalculoService {
         Double raizEncontrada = raizesDaFuncao.get(raizesDaFuncao.size() - 1);
         System.out.println("Finalização do calculo de raízes reais: " + raizEncontrada);
         auditoria.get(auditoria.size() - 1).setRaizDaFuncaoEncontrada(raizEncontrada);
-        listarAuditoria();
+        return listarAuditoria();
     }
 
 
-    public void listarAuditoria() {
+    public List<Auditoria> listarAuditoria() {
         System.out.println("Auditoria");
         auditoria.forEach(intervalo -> System.out.println(intervalo.toString()));
+        return auditoria;
     }
 
     /**
@@ -140,7 +140,7 @@ public class CalculoService {
      */
     public boolean isCriterioDeParada(Intervalo intervalo, Double epsilon) {
         Double epsilonCalculado = epsilon; //calcularEpsilon(epsilon);
-        Double modulo = intervalo.getB() - intervalo.getA();
+        Double modulo = Math.abs(intervalo.getB() - intervalo.getA());
         if (modulo < epsilonCalculado) {
             return false;
         } else {
@@ -200,23 +200,33 @@ public class CalculoService {
      */
     public List<Integer> retornaRange(EntradaFuncao entradaFuncao) {
         int contador = 0;
-        if(entradaFuncao.getEntradaSeis() != null) {
-            contador++;
+        if(entradaFuncao.getEntradaUm() != null) {
+//            contador++;
+            contador = 1;
         }
-        if(entradaFuncao.getEntradaCinco() != null) {
-            contador++;
-        }
-        if(entradaFuncao.getEntradaQuatro() != null) {
-            contador++;
+
+        if(entradaFuncao.getEntradaDois() != null) {
+//            contador++;
+            contador = 2;
         }
         if(entradaFuncao.getEntradaTres() != null) {
-            contador++;
+//            contador++;
+            contador = 3;
         }
-        if(entradaFuncao.getEntradaDois() != null) {
-            contador++;
+
+        if(entradaFuncao.getEntradaQuatro() != null) {
+//            contador++;
+            contador = 4;
         }
-        if(entradaFuncao.getEntradaUm() != null) {
-            contador++;
+
+        if(entradaFuncao.getEntradaCinco() != null) {
+//            contador++;
+            contador = 5;
+        }
+
+        if(entradaFuncao.getEntradaSeis() != null) {
+            contador = 6;
+//            contador++;
         }
 
         List<Integer> valores = IntStream.range(-contador, contador).boxed().collect(Collectors.toList());
