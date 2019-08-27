@@ -139,7 +139,7 @@ public class CalculoService {
      * @return
      */
     public boolean isCriterioDeParada(Intervalo intervalo, Double epsilon) {
-        Double epsilonCalculado = epsilon; //calcularEpsilon(epsilon);
+        Double epsilonCalculado = calcularEpsilon(epsilon);
         Double modulo = Math.abs(intervalo.getB() - intervalo.getA());
         if (modulo < epsilonCalculado) {
             return false;
