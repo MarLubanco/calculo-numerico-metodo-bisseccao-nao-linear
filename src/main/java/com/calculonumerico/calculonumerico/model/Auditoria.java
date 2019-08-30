@@ -1,10 +1,13 @@
 package com.calculonumerico.calculonumerico.model;
 
+import java.util.List;
+
 public class Auditoria {
 
     private Double raizDaFuncaoEncontrada = 0.0;
     private Intervalo intervalo;
     private Double raizDaFuncao;
+    private List<Intervalo> intervalosIniciais;
 
     public Auditoria(Double raizDaFuncaEncontrada, Intervalo intervalo, Double raizDaFuncao) {
         this.raizDaFuncaoEncontrada = raizDaFuncaEncontrada;
@@ -17,7 +20,22 @@ public class Auditoria {
         this.raizDaFuncao = raizDaFuncao;
     }
 
+    public Auditoria(Double raizDaFuncaoEncontrada, Intervalo intervalo, Double raizDaFuncao, List<Intervalo> intervalosIniciais) {
+        this.raizDaFuncaoEncontrada = raizDaFuncaoEncontrada;
+        this.intervalo = intervalo;
+        this.raizDaFuncao = raizDaFuncao;
+        this.intervalosIniciais = intervalosIniciais;
+    }
+
     public Auditoria() {
+    }
+
+    public List<Intervalo> getIntervalosIniciais() {
+        return intervalosIniciais;
+    }
+
+    public void setIntervalosIniciais(List<Intervalo> intervalosIniciais) {
+        this.intervalosIniciais = intervalosIniciais;
     }
 
     public Double getRaizDaFuncaoEncontrada() {

@@ -49,11 +49,16 @@ public class CalculoService {
         List<Integer> valores = retornaRange(entradaFuncao);
         List<Controle> controladores = analisarEntradas(entradaFuncao, valores);
         List<Intervalo> intervalos = gerarIntervalos(controladores);
+        List<Intervalo> intervalosIniciais = gerarIntervalos(controladores);
         for( Intervalo inter: intervalos) {
             System.out.println("Aplicando todo o calculo no intervalo " + inter.toString());
             Double mediaDeIntervalo = calcularMediaDeIntervalo(inter);
             auditorias = refinarIntervalo(entradaFuncao, inter, mediaDeIntervalo);
+            auditorias.forEach(a -> a.setIntervalosIniciais(intervalosIniciais));
+
         }
+
+
         return auditorias;
     }
 
@@ -102,6 +107,7 @@ public class CalculoService {
      * @param mediaIntervalo
      */
     public List<Auditoria> refinarIntervalo(EntradaFuncao entradaFuncao, Intervalo intervalo, Double mediaIntervalo) {
+       List<Auditoria> auditoriaFinal = new ArrayList<>();
        while (isCriterioDeParada(intervalo, entradaFuncao.getEntradaEpsilon())) {
            System.out.println("_________________________________________________________________ \n");
            System.out.println("O critério ainda não é verdadeiro " + intervalo.toString());
@@ -116,11 +122,14 @@ public class CalculoService {
            }
            raizesDaFuncao.add(resultadoFuncao);
            mediaIntervalo = calcularMediaDeIntervalo(intervalo);
-           auditoria.add(new Auditoria(new Intervalo(intervalo.getA(), intervalo.getB()), resultadoFuncao));
+           if (!isCriterioDeParada(intervalo, entradaFuncao.getEntradaEpsilon())) {
+               auditoria.add(new Auditoria(new Intervalo(intervalo.getA(), intervalo.getB()), resultadoFuncao));
+           }
        }
         Double raizEncontrada = raizesDaFuncao.get(raizesDaFuncao.size() - 1);
         System.out.println("Finalização do calculo de raízes reais: " + raizEncontrada);
         auditoria.get(auditoria.size() - 1).setRaizDaFuncaoEncontrada(raizEncontrada);
+//        return auditoria.get(auditoria.size() - 1);
         return listarAuditoria();
     }
 
