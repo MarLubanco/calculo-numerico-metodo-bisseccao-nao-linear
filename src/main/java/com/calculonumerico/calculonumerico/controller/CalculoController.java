@@ -16,9 +16,9 @@ public class CalculoController {
     private CalculoService calculoService;
 
     @CrossOrigin
-    @PostMapping
-    public List<Auditoria> calcularFuncao(@RequestBody EntradaFuncao entradaFuncao) {
-       System.out.println("Start Calcular Funcao");
+    @PostMapping("/{tipo}")
+    public List<Auditoria> calcularFuncao(@RequestBody EntradaFuncao entradaFuncao, @PathVariable String tipo) {
+       System.out.println("Start Calcular Funcao - " + tipo);
        return calculoService.aplicarFuncao(entradaFuncao);
     }
 
